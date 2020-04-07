@@ -12,6 +12,7 @@ import com.itextpdf.text.Chunk;
 import com.itextpdf.text.Font;
 import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.Paragraph;
+import java.awt.Color;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
@@ -31,11 +32,11 @@ import static ventanas.GestionarClientes.IDcliente_update;
 public class InformacionCliente extends javax.swing.JFrame {
 
     DefaultTableModel model = new DefaultTableModel();
-    
+
     int IDcliente_update = 0;
     public static int IDproducto = 0;
     String user = "";
-    
+
     /**
      * Creates new form InformacionCliente
      */
@@ -43,84 +44,84 @@ public class InformacionCliente extends javax.swing.JFrame {
         initComponents();
         user = Login.user;
         IDcliente_update = GestionarClientes.IDcliente_update;
-        
+
         setSize(630, 450);
         setResizable(false);
         setLocationRelativeTo(null);
-        
+
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        
+
         ImageIcon wallpaper = new ImageIcon("src/images/wallpaper.jpg");
         Icon icono = new ImageIcon(wallpaper.getImage().getScaledInstance(jLabel_Wallpaper.getWidth(), jLabel_Wallpaper.getHeight(), Image.SCALE_DEFAULT));
         jLabel_Wallpaper.setIcon(icono);
         this.repaint();
-        
+
         try {
             Connection cn = Conexion.conectar();
             PreparedStatement pst = cn.prepareStatement("select * from clientes where id_cliente = '" + IDcliente_update + "'");
             ResultSet rs = pst.executeQuery();
-            
+
             if (rs.next()) {
                 setTitle("Informacion del cliente " + rs.getString("nombre_cliente") + " - Sesion de " + user);
                 jLabel_Titulo.setText("Informacion del cliente " + rs.getString("nombre_cliente"));
-                
+
                 txt_Nombre.setText(rs.getString("nombre_cliente"));
                 txt_Mail.setText(rs.getString("mail_cliente"));
                 txt_Telefono.setText(rs.getString("tel_cliente"));
                 txt_direccion.setText(rs.getString("dir_cliente"));
-                txt_UltimaModificacion.setText(rs.getString("ultima_modificacion"));                
+                txt_UltimaModificacion.setText(rs.getString("ultima_modificacion"));
             }
             cn.close();
         } catch (SQLException e) {
             System.err.println("Error en cargar usuario. " + e);
             JOptionPane.showMessageDialog(null, "ERROR al cargar!! contacte al administrador.");
         }
-        
+
         try {
             Connection cn = Conexion.conectar();
             PreparedStatement pst = cn.prepareStatement("select id_producto, tipo_producto, marca, estatus from productos where id_cliente = '" + IDcliente_update + "'");
-            
+
             ResultSet rs = pst.executeQuery();
-            
+
             jTable_Productos = new JTable(model);
             jScrollPane_Productos.setViewportView(jTable_Productos);
-            
+
             model.addColumn("ID producto");
             model.addColumn("Tipo de producto");
             model.addColumn("Marca");
             model.addColumn("Estatus");
-            
-            while (rs.next()) {                
+
+            while (rs.next()) {
                 Object[] fila = new Object[4];
-                
+
                 for (int i = 0; i < 4; i++) {
                     fila[i] = rs.getObject(i + 1);
                 }
                 model.addRow(fila);
             }
             cn.close();
-            
+
         } catch (SQLException e) {
             System.err.println("Error en el llenado de la tabla productos " + e);
         }
-        
+
         jTable_Productos.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e){
+            public void mouseClicked(MouseEvent e) {
                 int fila_point = jTable_Productos.rowAtPoint(e.getPoint());
                 int columna_point = 0;
-                
+
                 if (fila_point > -1) {
-                    IDproducto = (int)model.getValueAt(fila_point, columna_point);
-                    
+                    IDproducto = (int) model.getValueAt(fila_point, columna_point);
+
                 }
             }
         });
-        
+
     }
-    
+
     @Override
-    public Image getIconImage(){
+    public Image getIconImage() {
         Image retValue = Toolkit.getDefaultToolkit().getImage(ClassLoader.getSystemResource("images/icon.png"));
         return retValue;
     }
@@ -281,11 +282,71 @@ public class InformacionCliente extends javax.swing.JFrame {
 
         RegistrarProducto registrarProducto = new RegistrarProducto();
         registrarProducto.setVisible(true);
-        
+
     }//GEN-LAST:event_jButton_RegistrarActionPerformed
 
     private void jButton_ActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton_ActualizarActionPerformed
-        
+
+        int validacion = 0;
+        String nombre, mail, telefono, direccion;
+
+        nombre = txt_Nombre.getText().trim();
+        mail = txt_Mail.getText().trim();
+        telefono = txt_Telefono.getText().trim();
+        direccion = txt_direccion.getText().trim();
+
+        if (nombre.equals("")) {
+            txt_Nombre.setBackground(Color.red);
+            validacion++;
+        }
+        if (mail.equals("")) {
+            txt_Mail.setBackground(Color.red);
+            validacion++;
+        }
+        if (telefono.equals("")) {
+            txt_Telefono.setBackground(Color.red);
+            validacion++;
+        }
+        if (direccion.equals("")) {
+            txt_direccion.setBackground(Color.red);
+            validacion++;
+        }
+
+        if (validacion == 0) {
+            try {
+                
+                Connection cn = Conexion.conectar();
+                PreparedStatement pst = cn.prepareStatement(
+                        "update clientes set nombre_cliente=?, mail_cliente=?, tel_cliente=?, dir_cliente=?, ultima_modificacion=? "
+                        + "where id_cliente = '" + IDcliente_update + "'");
+                pst.setString(1, nombre);
+                pst.setString(2, mail);
+                pst.setString(3, telefono);
+                pst.setString(4, direccion);
+                pst.setString(5, user);
+                
+                pst.executeUpdate();
+                cn.close();
+                
+                Limpiar();
+                        
+                txt_Nombre.setBackground(Color.green);
+                txt_Mail.setBackground(Color.green);
+                txt_Telefono.setBackground(Color.green);
+                txt_direccion.setBackground(Color.green);
+                txt_UltimaModificacion.setText(user);
+                
+                JOptionPane.showMessageDialog(null, "Actualizacion correcta");
+                this.dispose();
+                
+            } catch (SQLException e) {
+                System.err.println("Error en actualizar cliente " + e);
+                JOptionPane.showMessageDialog(null, " Error al actualizar cliente!!, contacte al administrador");
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Debes de llenar todos los campos.");
+        }
+
     }//GEN-LAST:event_jButton_ActualizarActionPerformed
 
     private void jButton_ImprimirReporteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton_ImprimirReporteActionPerformed
@@ -347,4 +408,11 @@ public class InformacionCliente extends javax.swing.JFrame {
     private javax.swing.JTextField txt_UltimaModificacion;
     private javax.swing.JTextField txt_direccion;
     // End of variables declaration//GEN-END:variables
+
+    private void Limpiar() {
+        txt_Nombre.setText("");
+        txt_Mail.setText("");
+        txt_Telefono.setText("");
+        txt_direccion.setText("");
+    }
 }
